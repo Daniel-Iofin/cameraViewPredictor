@@ -1,5 +1,5 @@
 import Vertex from './geometries/vertex.js';
-import Line from './geometries/line.js';
+import Edge from './geometries/edge.js';
 import Camera from './camera/camera.js';
 
 function getVertexAngles(vertices, camera) {
@@ -15,52 +15,52 @@ function getVertexAngles(vertices, camera) {
     return vertices;
 }
 
-function orderLines(vertices, lines) {
-    let orderedLines = [];
+function orderedges(vertices, edges) {
+    let orderededges = [];
 
-    lines.forEach(line => {
-        let vertex1Id = line.vertex1Id;
+    edges.forEach(edge => {
+        let vertex1Id = edge.vertex1Id;
         let vertex1 = vertices.find(vertex => vertex.id == vertex1Id);
-        let vertex2Id = line.vertex2Id;
+        let vertex2Id = edge.vertex2Id;
         let vertex2 = vertices.find(vertex => vertex.id == vertex2Id)
 
         if (vertex1.cameraAngle<vertex2.cameraAngle) { // bug from here down
             console.log("here")
-            orderedLines.push(line);
+            orderededges.push(edge);
         } else {
-            line.vertex1Id = vertex2Id;
-            line.vertex2Id = vertex1Id;
-            orderedLines.push(line);
+            edge.vertex1Id = vertex2Id;
+            edge.vertex2Id = vertex1Id;
+            orderededges.push(edge);
         }
     })
     
-    return orderedLines;
+    return orderededges;
 }
 
-function getViewLines(vertices, lines) {
+function getViewedges(vertices, edges) {
     vertices = vertices.sort((a, b) => a.cameraAngle - b.cameraAngle);
-    const orderedLines = orderLines(vertices, lines);
-    console.log(orderedLines);
+    const orderededges = orderedges(vertices, edges);
+    console.log(orderededges);
     return -1;
 }
 
 class Simulate2D {
-    constructor(vertices, lines, camera) {
+    constructor(vertices, edges, camera) {
         this.vertices = vertices; // {id, x, y}
-        this.lines = lines; // {id: {vertex1Id:_, vertex2Id:_}}
+        this.edges = edges; // {id: {vertex1Id:_, vertex2Id:_}}
         this.camera = camera;
     }
 
     predict() { // {x, y, angle, sweep}  angle is rotation of camera, sweep is how wide camera sees
         this.vertices = getVertexAngles(this.vertices, this.camera);
-        const viewPartition = getViewLines(this.vertices, this.lines);  // Which line is seen for which angle
+        const viewPartition = getViewedges(this.vertices, this.edges);  // Which edge is seen for which angle
     }
 }
-//getViewLines(0, 0, [[5, 4], [7, 10], [9, 5]], [{"vertex1Id": 7, "vertex2Id": 9},{"vertex1Id": 5, "vertex2Id": 9}])
+//getViewedges(0, 0, [[5, 4], [7, 10], [9, 5]], [{"vertex1Id": 7, "vertex2Id": 9},{"vertex1Id": 5, "vertex2Id": 9}])
 
 let vertices = [new Vertex(0, 1, 4), new Vertex(1, 2, 5), new Vertex(2, 4, 4), new Vertex(3, 5, 4)];
-let lines = [new Line(0, 0, 2), new Line(1, 1, 3)];
+let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
 let camera = new Camera(0, 1, 1, Math.PI/4, Math.PI/2);
 
-let simulation = new Simulate2D(vertices, lines, camera);
+let simulation = new Simulate2D(vertices, edges, camera);
 simulation.predict()
