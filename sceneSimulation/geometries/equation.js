@@ -6,6 +6,18 @@ export default class Equation {
         this.b = b;
     }
 
+    generate(vertex1, vertex2) {
+        this.m = (vertex2.y-vertex1.y)/(vertex2.x-vertex1.x);
+        
+        if (this.m==Infinity) {
+            this.b = vertex1.x;
+        } else {
+            this.b = vertex1.y-m*vertex1.x;
+        }
+
+        return this;
+    }
+
     intersection(equation) {
         if (JSON.stringify(equation)==JSON.stringify(this)) {
             return new Equation(this.m, this.b);
