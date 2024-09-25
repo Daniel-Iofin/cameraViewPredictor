@@ -1,4 +1,4 @@
-import Point from '/vertex.js';
+import Point from './point.js';
 
 export default class Equation {
     constructor(m, b) {
