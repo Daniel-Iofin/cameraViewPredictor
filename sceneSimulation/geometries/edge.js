@@ -3,6 +3,12 @@ export default class Edge {
         this.id = id;
         this.vertex1Id = vertex1Id;
         this.vertex2Id = vertex2Id;
+
+        const r = Math.floor(Math.random() * 256);
+        const g = Math.floor(Math.random() * 256);
+        const b = Math.floor(Math.random() * 256);
+
+        this.color = `${r},${g},${b}`;
     }
 
     getLeftVertexAngle(vertices) {

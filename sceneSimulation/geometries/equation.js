@@ -12,7 +12,7 @@ export default class Equation {
         if (this.m==Infinity) {
             this.b = vertex1.x;
         } else {
-            this.b = vertex1.y-m*vertex1.x;
+            this.b = vertex1.y-this.m*vertex1.x;
         }
 
         return this;
@@ -26,15 +26,15 @@ export default class Equation {
         } else if (equation.m==Infinity) { // when m=Infinity, b is the x-coordinate
             let intersectionX = equation.b;
             let intersectionY = this.m*intersectionX+this.b;
-            return Point(intersectionX, intersectionY);
+            return new Point(intersectionX, intersectionY);
         } else if (this.m==Infinity) { // when m=Infinity, b is the x-coordinate
             let intersectionX = this.b;
             let intersectionY = equation.m*intersectionX+equation.b;
-            return Point(intersectionX, intersectionY);
+            return new Point(intersectionX, intersectionY);
         }
 
         let intersectionX = (equation.b-this.b)/(this.m-equation.m);
         let intersectionY = this.m*intersectionX+this.b;
-        return Point(intersectionX, intersectionY);
+        return new Point(intersectionX, intersectionY);
     }
 }

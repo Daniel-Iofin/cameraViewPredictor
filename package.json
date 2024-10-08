@@ -1,3 +1,6 @@
 {
-    "type": "module"
-  }
+    "type": "module",
+    "dependencies": {
+        "turtle-js": "^1.0.4"
+    }
+}
