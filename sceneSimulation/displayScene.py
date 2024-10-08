@@ -44,7 +44,6 @@ def draw_scene(file_path):
 
         # Draw the line
         t.goto(x2*factor, y2*factor)
-        print("done")
 
     # Keep the window open until clicked
     screen.exitonclick()

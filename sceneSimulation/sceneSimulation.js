@@ -96,7 +96,75 @@ edges.forEach((edge) => {
     let edgeText = `${x1Vertex.x},${y1Vertex.y};${x2Vertex.x},${y2Vertex.y};${edge.color}\n`;
     content+=edgeText;
 })
-content = content.slice(0,-2)
+
+//content+= `${camera.x},${camera.y};${camera.x},${camera.y}`
+let {cameraEquationLeft, cameraEquationRight} = camera.equations();
+let equationTop = new Equation(0, 64);
+let equationBottom = new Equation(0, 0);
+let equationLeft = new Equation(Infinity, 0);
+let equationRight = new Equation(Infinity, 64);
+
+function intersectionWithBound(side, cameraEquation, cameraEquation_equationTop_intersection, cameraEquation_equationBottom_intersection, cameraEquation_equationLeft_intersection, cameraEquation_equationRight_intersection) {
+    if (Number.isNaN(cameraEquation_equationLeft_intersection) && Number.isNaN(cameraEquation_equationRight_intersection)) {
+        if (cameraEquation.m==Infinity) {
+            return cameraEquation_equationTop_intersection;
+        } else if (cameraEquation.m>0) {
+            return cameraEquation_equationTop_intersection;
+        }
+        return cameraEquation_equationBottom_intersection;
+    } else if (Number.isNaN(cameraEquation_equationBottom_intersection) && Number.isNaN(cameraEquation_equationTop_intersection)) {
+        if (side=="r") {
+            return cameraEquation_equationRight_intersection
+        } else {
+            return cameraEquation_equationLeft_intersection;
+        }
+    } else if (cameraEquation_equationLeft_intersection!=NaN && cameraEquation_equationTop_intersection!=NaN) {
+        if (cameraEquation_equationLeft_intersection.y<=64) {
+            return cameraEquation_equationLeft_intersection;
+        } else {
+            return cameraEquation_equationTop_intersection;
+        }
+    } else if (cameraEquation_equationRight_intersection!=NaN && cameraEquation_equationTop_intersection!=NaN) {
+        if (cameraEquation_equationRight_intersection.y<=64) {
+            return cameraEquation_equationRight_intersection;
+        } else {
+            return cameraEquation_equationTop_intersection;
+        }
+    } else if (cameraEquation_equationRight_intersection!=NaN && cameraEquation_equationBottom_intersection!=NaN) {
+        if (cameraEquation_equationRight_intersection.y>=0) {
+            return cameraEquation_equationRight_intersection;
+        } else {
+            return cameraEquation_equationBottom_intersection;
+        }
+    } else if (cameraEquation_equationLeft_intersection!=NaN && cameraEquation_equationBottom_intersection!=NaN) {
+        if (cameraEquation_equationLeft_intersection.y>=0) {
+            return cameraEquation_equationLeft_intersection;
+        } else {
+            return cameraEquation_equationBottom_intersection;
+        }
+    }
+}
+
+
+let cameraEquationLeft_equationTop_intersection = cameraEquationLeft.intersection(equationTop);
+let cameraEquationLeft_equationBottom_intersection = cameraEquationLeft.intersection(equationBottom);
+let cameraEquationLeft_equationLeft_intersection = cameraEquationLeft.intersection(equationLeft);
+let cameraEquationLeft_equationRight_intersection = cameraEquationLeft.intersection(equationRight);
+
+let intersectionCameraLeft = intersectionWithBound("l", cameraEquationLeft, cameraEquationLeft_equationTop_intersection, cameraEquationLeft_equationBottom_intersection, cameraEquationLeft_equationLeft_intersection, cameraEquationLeft_equationRight_intersection)
+
+
+let cameraEquationRight_equationTop_intersection = cameraEquationRight.intersection(equationTop);
+let cameraEquationRight_equationBottom_intersection = cameraEquationRight.intersection(equationBottom);
+let cameraEquationRight_equationLeft_intersection = cameraEquationRight.intersection(equationLeft);
+let cameraEquationRight_equationRight_intersection = cameraEquationRight.intersection(equationRight);
+
+let intersectionCameraRight = intersectionWithBound("r", cameraEquationRight, cameraEquationRight_equationTop_intersection, cameraEquationRight_equationBottom_intersection, cameraEquationRight_equationLeft_intersection, cameraEquationRight_equationRight_intersection)
+
+console.log(intersectionCameraLeft, intersectionCameraRight);
+
+let cameraContent = `${camera.x},${camera.y};${intersectionCameraLeft.x},${intersectionCameraLeft.y};255,0,0\n`+`${camera.x},${camera.y};${intersectionCameraRight.x},${intersectionCameraRight.y};255,0,0`
+content += cameraContent
 
 writeFile('scene.txt', content, (err) => {
     if (err) {
@@ -105,3 +173,5 @@ writeFile('scene.txt', content, (err) => {
         console.log('File has been written successfully.');
     }
 });
+
+// TODO: GLOBAL VARIABLE FOR WORLD BOUNDARY

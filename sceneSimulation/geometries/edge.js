@@ -4,9 +4,9 @@ export default class Edge {
         this.vertex1Id = vertex1Id;
         this.vertex2Id = vertex2Id;
 
-        const r = Math.floor(Math.random() * 256);
-        const g = Math.floor(Math.random() * 256);
-        const b = Math.floor(Math.random() * 256);
+        const r = Math.floor(0);
+        const g = Math.floor(Math.random() * 255);
+        const b = Math.floor(Math.random() * 255);
 
         this.color = `${r},${g},${b}`;
     }
