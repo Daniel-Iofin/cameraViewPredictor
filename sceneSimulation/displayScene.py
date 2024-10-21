@@ -27,23 +27,45 @@ def draw_scene(file_path):
 
 
 
-    for line in lines:
-        # Parse the line: x1,y1;x2,y2;r,g,b
-        point1, point2, rgb = line.split(';')
-        x1, y1 = float(point1.split(',')[0]), float(point1.split(',')[1])
-        x2, y2 = float(point2.split(',')[0]), float(point2.split(',')[1])
-        r, g, b = map(int, rgb.split(','))
+    for i in range(len(lines)):
+        line = lines[i]
+        line = line.strip()
+        if line.startswith('#'):
+            # Parse the line for the new y-value and color
+            xVal, color_value = line.split(';')
+            xVal = float(xVal[1:])
+            r, g, b = map(int, color_value.split(','))
+            t.pencolor(r, g, b)  # Update the current color
 
-        # Move the turtle to the starting point without drawing
-        t.penup()
-        t.goto(x1*factor, y1*factor)
-        t.pendown()
+            
+            # Move to the new y-value position
+            t.pendown()
+            t.goto(xVal*bounds*factor, -25)
+            t.pendown
+            
 
-        # Set the line color
-        t.pencolor(r, g, b)
+        else:
+            # Parse the line: x1,y1;x2,y2;r,g,b
+            point1, point2, rgb = line.split(';')
+            x1, y1 = float(point1.split(',')[0]), float(point1.split(',')[1])
+            x2, y2 = float(point2.split(',')[0]), float(point2.split(',')[1])
+            r, g, b = map(int, rgb.split(','))
 
-        # Draw the line
-        t.goto(x2*factor, y2*factor)
+            # Move the turtle to the starting point without drawing
+            t.penup()
+            t.goto(x1*factor, y1*factor)
+            t.pendown()
+
+            # Set the line color
+            t.pencolor(r, g, b)
+
+            # Draw the line
+            t.goto(x2*factor, y2*factor)
+        
+        if not lines[i].startswith("#"):
+            if lines[i+1].startswith("#"):
+                t.penup()
+                t.goto(0, -25)
 
     # Keep the window open until clicked
     screen.exitonclick()
