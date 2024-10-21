@@ -69,11 +69,18 @@ def draw_scene(file_path):
                 xVal, color_value = lines[i+1].split(';')
                 xVal = float(xVal[1:])
                 r, g, b = map(int, color_value.split(','))
-                t.pencolor(r, g, b)  # Update the current color
 
                 t.penup()
-                t.goto(xVal*bounds*factor, -25)
+                t.goto(0, -25)
+                t.pencolor(200,200,200)
+
                 t.pendown()
+                t.goto(xVal*bounds*factor, -25)
+                t.pencolor(r, g, b)  # Update the current color
+                t.pendown()
+    t.pendown()
+    t.pencolor(200,200,200)
+    t.goto(bounds*factor, -25)
 
     # Keep the window open until clicked
     screen.exitonclick()
