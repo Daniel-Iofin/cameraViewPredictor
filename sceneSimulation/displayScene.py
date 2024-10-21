@@ -65,6 +65,7 @@ def draw_scene(file_path):
         
         if not lines[i].startswith("#"):
             if lines[i+1].startswith("#"):
+                t.pensize(5)
                 xVal, color_value = lines[i+1].split(';')
                 xVal = float(xVal[1:])
                 r, g, b = map(int, color_value.split(','))
