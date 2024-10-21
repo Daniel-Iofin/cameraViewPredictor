@@ -4,6 +4,10 @@ import Edge from './geometries/edge.js';
 import Equation from './geometries/equation.js';
 import Camera from './camera/camera.js';
 
+function mod(n, m) {
+    return ((n % m) + m) % m;
+}
+
 function getVertexAngles(vertices, camera) {
     vertices.forEach(vertex => {
         let deltaX = vertex.x - camera.x;
@@ -97,61 +101,100 @@ edges.forEach((edge) => {
     content+=edgeText;
 })
 
-//content+= `${camera.x},${camera.y};${camera.x},${camera.y}`
+
 let {cameraEquationLeft, cameraEquationRight} = camera.equations();
 let equationTop = new Equation(0, 64);
 let equationBottom = new Equation(0, 0);
 let equationLeft = new Equation(Infinity, 0);
 let equationRight = new Equation(Infinity, 64);
 
-function intersectionWithBound(side, cameraEquation, cameraEquation_equationTop_intersection, cameraEquation_equationBottom_intersection, cameraEquation_equationLeft_intersection, cameraEquation_equationRight_intersection) {
+function intersectionWithBound(quadrant, cameraEquation, cameraEquation_equationTop_intersection, cameraEquation_equationBottom_intersection, cameraEquation_equationLeft_intersection, cameraEquation_equationRight_intersection) {
+    const isLeftIntersectionValid = !Number.isNaN(cameraEquation_equationLeft_intersection);
+    const isRightIntersectionValid = !Number.isNaN(cameraEquation_equationRight_intersection);
+    const isTopIntersectionValid = !Number.isNaN(cameraEquation_equationTop_intersection);
+    const isBottomIntersectionValid = !Number.isNaN(cameraEquation_equationBottom_intersection);
+
+    let cameraSlope = cameraEquation.m
+    if (cameraSlope === Infinity || cameraSlope === -Infinity) {
+        if (quadrant==1 || quadrant==2) {
+            return cameraEquation_equationTop_intersection; // Right edge for vertical line
+        }
+        return cameraEquation_equationBottom_intersection; // Left edge for vertical line
+    }
+
+    // Handle horizontal line (zero slope)
+    if (cameraSlope === 0) {
+        if (quadrant==1) {
+            return cameraEquation_equationRight_intersection; // Top edge for horizontal line
+        }
+        return cameraEquation_equationLeft_intersection; // Bottom edge for horizontal line
+    }
+
+    if (quadrant === 1) { // First Quadrant: Top and Right
+        if (isRightIntersectionValid && isTopIntersectionValid) {
+            return (cameraEquation_equationRight_intersection.y <= 64) ? cameraEquation_equationRight_intersection : cameraEquation_equationTop_intersection;
+        }
+    } else if (quadrant === 2) { // Second Quadrant: Top and Left
+        if (isLeftIntersectionValid && isTopIntersectionValid) {
+            return (cameraEquation_equationLeft_intersection.y <= 64) ? cameraEquation_equationLeft_intersection : cameraEquation_equationTop_intersection;
+        }
+    } else if (quadrant === 3) { // Third Quadrant: Bottom and Left
+        if (isLeftIntersectionValid && isBottomIntersectionValid) {
+            return (cameraEquation_equationLeft_intersection.y >= 0) ? cameraEquation_equationLeft_intersection : cameraEquation_equationBottom_intersection;
+        }
+    } else if (quadrant === 4) { // Fourth Quadrant: Bottom and Right
+        if (isRightIntersectionValid && isBottomIntersectionValid) {
+            return (cameraEquation_equationRight_intersection.y >= 0) ? cameraEquation_equationRight_intersection : cameraEquation_equationBottom_intersection;
+        }
+    }
+
+    // Handle cases where neither border is valid
     if (Number.isNaN(cameraEquation_equationLeft_intersection) && Number.isNaN(cameraEquation_equationRight_intersection)) {
-        if (cameraEquation.m==Infinity) {
-            return cameraEquation_equationTop_intersection;
-        } else if (cameraEquation.m>0) {
+        if (cameraEquation.m === Infinity || cameraEquation.m > 0) {
             return cameraEquation_equationTop_intersection;
         }
         return cameraEquation_equationBottom_intersection;
-    } else if (Number.isNaN(cameraEquation_equationBottom_intersection) && Number.isNaN(cameraEquation_equationTop_intersection)) {
-        if (side=="r") {
-            return cameraEquation_equationRight_intersection
-        } else {
-            return cameraEquation_equationLeft_intersection;
-        }
-    } else if (cameraEquation_equationLeft_intersection!=NaN && cameraEquation_equationTop_intersection!=NaN) {
-        if (cameraEquation_equationLeft_intersection.y<=64) {
-            return cameraEquation_equationLeft_intersection;
-        } else {
-            return cameraEquation_equationTop_intersection;
-        }
-    } else if (cameraEquation_equationRight_intersection!=NaN && cameraEquation_equationTop_intersection!=NaN) {
-        if (cameraEquation_equationRight_intersection.y<=64) {
-            return cameraEquation_equationRight_intersection;
-        } else {
-            return cameraEquation_equationTop_intersection;
-        }
-    } else if (cameraEquation_equationRight_intersection!=NaN && cameraEquation_equationBottom_intersection!=NaN) {
-        if (cameraEquation_equationRight_intersection.y>=0) {
-            return cameraEquation_equationRight_intersection;
-        } else {
-            return cameraEquation_equationBottom_intersection;
-        }
-    } else if (cameraEquation_equationLeft_intersection!=NaN && cameraEquation_equationBottom_intersection!=NaN) {
-        if (cameraEquation_equationLeft_intersection.y>=0) {
-            return cameraEquation_equationLeft_intersection;
-        } else {
-            return cameraEquation_equationBottom_intersection;
-        }
+    }
+
+    // Handle cases for borders without checking quadrant
+    if (isBottomIntersectionValid && isTopIntersectionValid) {
+        return (cameraEquation_equationBottom_intersection.y >= 0) ? cameraEquation_equationBottom_intersection : cameraEquation_equationTop_intersection;
+    }
+
+    return null; // Return null if no valid intersection found
+}
+
+function getQuadrant(cameraSlope) {
+    // Normalize the slope to be within [0, 2π)
+    let normalizedSlope = cameraSlope % (2 * Math.PI);
+    if (normalizedSlope < 0) {
+        normalizedSlope += 2 * Math.PI; // Ensure it's positive
+    }
+
+    // Determine the quadrant based on the normalized slope
+    if (normalizedSlope >= 0 && normalizedSlope < Math.PI / 2) {
+        return 1; // First Quadrant
+    } else if (normalizedSlope >= Math.PI / 2 && normalizedSlope < Math.PI) {
+        return 2; // Second Quadrant
+    } else if (normalizedSlope >= Math.PI && normalizedSlope < 3 * Math.PI / 2) {
+        return 3; // Third Quadrant
+    } else if (normalizedSlope >= 3 * Math.PI / 2 && normalizedSlope < 2 * Math.PI) {
+        return 4; // Fourth Quadrant
+    } else {
+        return 'Undefined'; // Should not reach here
     }
 }
 
+
+let cameraSlopeLeft = mod(camera.direction-camera.angle/2, 2*Math.PI)
+let cameraSlopeRight = mod(camera.direction-camera.angle/2, 2*Math.PI)
 
 let cameraEquationLeft_equationTop_intersection = cameraEquationLeft.intersection(equationTop);
 let cameraEquationLeft_equationBottom_intersection = cameraEquationLeft.intersection(equationBottom);
 let cameraEquationLeft_equationLeft_intersection = cameraEquationLeft.intersection(equationLeft);
 let cameraEquationLeft_equationRight_intersection = cameraEquationLeft.intersection(equationRight);
 
-let intersectionCameraLeft = intersectionWithBound("l", cameraEquationLeft, cameraEquationLeft_equationTop_intersection, cameraEquationLeft_equationBottom_intersection, cameraEquationLeft_equationLeft_intersection, cameraEquationLeft_equationRight_intersection)
+let intersectionCameraLeft = intersectionWithBound(getQuadrant(cameraSlopeLeft), cameraEquationLeft, cameraEquationLeft_equationTop_intersection, cameraEquationLeft_equationBottom_intersection, cameraEquationLeft_equationLeft_intersection, cameraEquationLeft_equationRight_intersection)
 
 
 let cameraEquationRight_equationTop_intersection = cameraEquationRight.intersection(equationTop);
@@ -159,7 +202,7 @@ let cameraEquationRight_equationBottom_intersection = cameraEquationRight.inters
 let cameraEquationRight_equationLeft_intersection = cameraEquationRight.intersection(equationLeft);
 let cameraEquationRight_equationRight_intersection = cameraEquationRight.intersection(equationRight);
 
-let intersectionCameraRight = intersectionWithBound("r", cameraEquationRight, cameraEquationRight_equationTop_intersection, cameraEquationRight_equationBottom_intersection, cameraEquationRight_equationLeft_intersection, cameraEquationRight_equationRight_intersection)
+let intersectionCameraRight = intersectionWithBound(getQuadrant(cameraSlopeRight), cameraEquationRight, cameraEquationRight_equationTop_intersection, cameraEquationRight_equationBottom_intersection, cameraEquationRight_equationLeft_intersection, cameraEquationRight_equationRight_intersection)
 
 console.log(intersectionCameraLeft, intersectionCameraRight);
 
