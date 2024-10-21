@@ -32,16 +32,17 @@ def draw_scene(file_path):
         line = line.strip()
         if line.startswith('#'):
             # Parse the line for the new y-value and color
-            xVal, color_value = line.split(';')
-            xVal = float(xVal[1:])
-            r, g, b = map(int, color_value.split(','))
-            t.pencolor(r, g, b)  # Update the current color
+            if (i!=len(lines)-1):
+                xVal, color_value = lines[i+1].split(';')
+                xVal = float(xVal[1:])
 
-            
-            # Move to the new y-value position
-            t.pendown()
-            t.goto(xVal*bounds*factor, -25)
-            t.pendown
+                r, g, b = map(int, color_value.split(','))
+                t.pencolor(r, g, b)  # Update the current color
+
+                
+                # Move to the new y-value position
+                t.goto(xVal*bounds*factor, -25)
+
             
 
         else:
@@ -64,8 +65,14 @@ def draw_scene(file_path):
         
         if not lines[i].startswith("#"):
             if lines[i+1].startswith("#"):
+                xVal, color_value = lines[i+1].split(';')
+                xVal = float(xVal[1:])
+                r, g, b = map(int, color_value.split(','))
+                t.pencolor(r, g, b)  # Update the current color
+
                 t.penup()
-                t.goto(0, -25)
+                t.goto(xVal*bounds*factor, -25)
+                t.pendown()
 
     # Keep the window open until clicked
     screen.exitonclick()
