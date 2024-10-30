@@ -32,8 +32,8 @@ function orderEdges(vertices, edges) {
 function findFrontEdge(camera, angle, vertices, edges) {
     const cameraX = camera.x;
     const cameraY = camera.y;
-    const m = Math.atan(angle);
-    const b = cameraY-m*cameraX;
+    const m = 1/Math.atan(angle);
+    let b = cameraY-m*cameraX;
     if (m==Infinity) {
         b = camera.x;
     }
@@ -46,7 +46,6 @@ function findFrontEdge(camera, angle, vertices, edges) {
         const edgeEquation = new Equation().generate(vertex1, vertex2);
         const intersection = cameraEquation.intersection(edgeEquation);
         const distance = Math.pow(Math.pow((intersection.x-cameraX), 2)+Math.pow((intersection.y-cameraY), 2), 0.5)
-
         return {
             id: edge.id,
             projection: distance
@@ -80,7 +79,7 @@ function getView(edges, vertices, camera) {
             }
         });
 
-        let trueAngle = camera.angle + cameraAngle;
+        let trueAngle = camera.direction + cameraAngle;
         
         let frontEdge = findFrontEdge(camera, trueAngle, vertices, activeEdges);
         
@@ -103,7 +102,6 @@ function getViewEdges(vertices, edges, camera) {
         let edgeId = element[1];
         colorView.push([element[0], edges.find(e => e.id === edgeId).color])
     })
-    
     return colorView
 }
 
@@ -121,9 +119,9 @@ class Simulate2D {
     }
 }
 
-let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 41, 40), new Vertex(3, 50, 40)];
+let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 40), new Vertex(3, 50, 40)];
 let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
-let camera = new Camera(0, 1, 1, Math.PI/4, Math.PI/2);
+let camera = new Camera(0, 10, 10, Math.PI/4, Math.PI/2);
 let simulation = new Simulate2D(vertices, edges, camera);
 
 nextEdgeId = 4;
