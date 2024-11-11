@@ -3,6 +3,7 @@ import Vertex from './geometries/vertex.js';
 import Edge from './geometries/edge.js';
 import Equation from './geometries/equation.js';
 import Camera from './camera/camera.js';
+import Point from './geometries/point.js'
 import { isArrayBufferView } from 'util/types';
 
 let nextEdgeId=0;
@@ -122,7 +123,7 @@ class Simulate2D {
 
 let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 40), new Vertex(3, 50, 40)];
 let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
-let camera = new Camera(0, 10, 10, Math.PI*1/4, Math.PI*1/2);
+let camera = new Camera(0, 10, 10, Math.PI*1/4, 2*Math.PI);
 let simulation = new Simulate2D(vertices, edges, camera);
 
 nextEdgeId = 4;
@@ -183,11 +184,10 @@ function intersectionWithBound(quadrant, cameraEquation, cameraEquation_equation
         }
     } else if (quadrant === 2) {
         if (isLeftIntersectionValid && isBottomIntersectionValid) {
-            return (cameraEquation_equationLeft_intersection.y >=0) ? cameraEquation_equationLeft_intersection : cameraEquation_equationTop_intersection;
+            return (cameraEquation_equationLeft_intersection.y >=0) ? cameraEquation_equationLeft_intersection : cameraEquation_equationBottom_intersection;
         }
     } else if (quadrant === 3) {
         if (isRightIntersectionValid && isBottomIntersectionValid) {
-            console.log(cameraEquation_equationRight_intersection, quadrant)
             return (cameraEquation_equationRight_intersection.y >= 0) ? cameraEquation_equationRight_intersection : cameraEquation_equationBottom_intersection;
         }
     } else if (quadrant === 4) {
@@ -229,9 +229,27 @@ function getQuadrant(cameraSlope) {
     }
 }
 
+function getVisibleCorners(cameraAngleLeft, cameraAngleRight) {
+    let visibleCorners = [];
+    if (cameraAngleLeft>Math.PI/4 && cameraAngleRight<Math.PI/4) {  
+        visibleCorners.push(new Point(64, 64));
+    }
+    if (cameraAngleLeft>Math.PI*3/4 && cameraAngleRight<Math.PI*3/4) {  
+        visibleCorners.push(new Point(0, 64));
+    }
+    if (cameraAngleLeft>Math.PI*5/4 && cameraAngleRight<Math.PI*5/4) {
+        visibleCorners.push(new Point(0, 0));
+    }
+    if (cameraAngleLeft>Math.PI*7/4 && cameraAngleRight<Math.PI*7/4) {
+        visibleCorners.push(new Point(64, 0));
+    }
+    return visibleCorners;
+}
+
 
 let cameraAngleLeft = camera.direction+camera.angle/2;
 let cameraAngleRight = camera.direction-camera.angle/2;
+//console.log(getVisibleCorners(cameraAngleLeft, cameraAngleRight), "wow")
 
 let cameraEquationLeft_equationTop_intersection = cameraEquationLeft.intersection(equationTop);
 let cameraEquationLeft_equationBottom_intersection = cameraEquationLeft.intersection(equationBottom);
