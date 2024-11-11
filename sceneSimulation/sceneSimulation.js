@@ -100,7 +100,8 @@ function getViewEdges(vertices, edges, camera) {
     let colorView = []
     view.forEach((element) => {
         let edgeId = element[1];
-        colorView.push([element[0], edges.find(e => e.id === edgeId).color])
+        let adjustedView = element[0]+(camera.direction+camera.angle/2)-Math.PI/2;
+        colorView.push([adjustedView, edges.find(e => e.id === edgeId).color])
     })
     return colorView
 }
@@ -121,7 +122,7 @@ class Simulate2D {
 
 let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 40), new Vertex(3, 50, 40)];
 let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
-let camera = new Camera(0, 10, 10, Math.PI/4, Math.PI/2);
+let camera = new Camera(0, 10, 10, Math.PI*1/4, Math.PI*1/2);
 let simulation = new Simulate2D(vertices, edges, camera);
 
 nextEdgeId = 4;
@@ -129,10 +130,10 @@ nextEdgeId = 4;
 let view = simulation.predict();
 
 let normedView = []
-console.log(view)
 view.forEach((element) => {
     normedView.push([(camera.angle/2+element[0])/camera.angle, element[1]])
 })
+console.log(normedView)
 
 
 let content = "";
@@ -177,20 +178,21 @@ function intersectionWithBound(quadrant, cameraEquation, cameraEquation_equation
     }
 
     if (quadrant === 1) {
-        if (isRightIntersectionValid && isTopIntersectionValid) {
-            return (cameraEquation_equationRight_intersection.y <= 64) ? cameraEquation_equationRight_intersection : cameraEquation_equationTop_intersection;
-        }
-    } else if (quadrant === 2) {
         if (isLeftIntersectionValid && isTopIntersectionValid) {
             return (cameraEquation_equationLeft_intersection.y <= 64) ? cameraEquation_equationLeft_intersection : cameraEquation_equationTop_intersection;
         }
-    } else if (quadrant === 3) {
+    } else if (quadrant === 2) {
         if (isLeftIntersectionValid && isBottomIntersectionValid) {
-            return (cameraEquation_equationLeft_intersection.y >= 0) ? cameraEquation_equationLeft_intersection : cameraEquation_equationBottom_intersection;
+            return (cameraEquation_equationLeft_intersection.y >=0) ? cameraEquation_equationLeft_intersection : cameraEquation_equationTop_intersection;
+        }
+    } else if (quadrant === 3) {
+        if (isRightIntersectionValid && isBottomIntersectionValid) {
+            console.log(cameraEquation_equationRight_intersection, quadrant)
+            return (cameraEquation_equationRight_intersection.y >= 0) ? cameraEquation_equationRight_intersection : cameraEquation_equationBottom_intersection;
         }
     } else if (quadrant === 4) {
-        if (isRightIntersectionValid && isBottomIntersectionValid) {
-            return (cameraEquation_equationRight_intersection.y >= 0) ? cameraEquation_equationRight_intersection : cameraEquation_equationBottom_intersection;
+        if (isRightIntersectionValid && isTopIntersectionValid) {
+            return (cameraEquation_equationRight_intersection.y <= 64) ? cameraEquation_equationRight_intersection : cameraEquation_equationTop_intersection;
         }
     }
 
@@ -215,28 +217,28 @@ function getQuadrant(cameraSlope) {
     }
 
     if (normalizedSlope >= 0 && normalizedSlope < Math.PI / 2) {
-        return 1;
-    } else if (normalizedSlope >= Math.PI / 2 && normalizedSlope < Math.PI) {
-        return 2;
-    } else if (normalizedSlope >= Math.PI && normalizedSlope < 3 * Math.PI / 2) {
-        return 3;
-    } else if (normalizedSlope >= 3 * Math.PI / 2 && normalizedSlope < 2 * Math.PI) {
         return 4;
+    } else if (normalizedSlope >= Math.PI / 2 && normalizedSlope < Math.PI) {
+        return 1;
+    } else if (normalizedSlope >= Math.PI && normalizedSlope < 3 * Math.PI / 2) {
+        return 2;
+    } else if (normalizedSlope >= 3 * Math.PI / 2 && normalizedSlope < 2 * Math.PI) {
+        return 3;
     } else {
         return 'Undefined';
     }
 }
 
 
-let cameraSlopeLeft = mod(camera.direction-camera.angle/2, 2*Math.PI)
-let cameraSlopeRight = mod(camera.direction-camera.angle/2, 2*Math.PI)
+let cameraAngleLeft = camera.direction+camera.angle/2;
+let cameraAngleRight = camera.direction-camera.angle/2;
 
 let cameraEquationLeft_equationTop_intersection = cameraEquationLeft.intersection(equationTop);
 let cameraEquationLeft_equationBottom_intersection = cameraEquationLeft.intersection(equationBottom);
 let cameraEquationLeft_equationLeft_intersection = cameraEquationLeft.intersection(equationLeft);
 let cameraEquationLeft_equationRight_intersection = cameraEquationLeft.intersection(equationRight);
 
-let intersectionCameraLeft = intersectionWithBound(getQuadrant(cameraSlopeLeft), cameraEquationLeft, cameraEquationLeft_equationTop_intersection, cameraEquationLeft_equationBottom_intersection, cameraEquationLeft_equationLeft_intersection, cameraEquationLeft_equationRight_intersection)
+let intersectionCameraLeft = intersectionWithBound(getQuadrant(cameraAngleLeft), cameraEquationLeft, cameraEquationLeft_equationTop_intersection, cameraEquationLeft_equationBottom_intersection, cameraEquationLeft_equationLeft_intersection, cameraEquationLeft_equationRight_intersection)
 
 
 let cameraEquationRight_equationTop_intersection = cameraEquationRight.intersection(equationTop);
@@ -244,8 +246,7 @@ let cameraEquationRight_equationBottom_intersection = cameraEquationRight.inters
 let cameraEquationRight_equationLeft_intersection = cameraEquationRight.intersection(equationLeft);
 let cameraEquationRight_equationRight_intersection = cameraEquationRight.intersection(equationRight);
 
-let intersectionCameraRight = intersectionWithBound(getQuadrant(cameraSlopeRight), cameraEquationRight, cameraEquationRight_equationTop_intersection, cameraEquationRight_equationBottom_intersection, cameraEquationRight_equationLeft_intersection, cameraEquationRight_equationRight_intersection)
-
+let intersectionCameraRight = intersectionWithBound(getQuadrant(cameraAngleRight), cameraEquationRight, cameraEquationRight_equationTop_intersection, cameraEquationRight_equationBottom_intersection, cameraEquationRight_equationLeft_intersection, cameraEquationRight_equationRight_intersection)
 
 let cameraContent = `${camera.x},${camera.y};${intersectionCameraLeft.x},${intersectionCameraLeft.y};255,0,0\n`+`${camera.x},${camera.y};${intersectionCameraRight.x},${intersectionCameraRight.y};255,0,0`
 content += cameraContent

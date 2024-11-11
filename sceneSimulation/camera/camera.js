@@ -12,23 +12,26 @@ export default class Camera {
     equations() {
         const epsilon = 1e-10; // Small tolerance value
 
-        let directionLeft = this.direction-this.angle/2;
-        let directionRight = this.direction+this.angle/2;
-
-        let angleLeft = Math.PI/2-directionLeft;
+        let directionLeft = this.direction+this.angle/2;
+        let directionRight = this.direction-this.angle/2;
+        
         let slopeLeft;
-        if (Math.abs(angleLeft - Math.PI/2) < epsilon) {
+        if (Math.abs(directionLeft%Math.PI - Math.PI/2) < epsilon) {
             slopeLeft = Infinity;
-        }else {
-            slopeLeft = Math.tan(angleLeft);
+        } else {
+            slopeLeft = Math.tan(directionLeft);
         }
-
-        let angleRight = Math.PI/2-directionRight;
+        if (slopeLeft==0 && directionLeft==0) {
+            slopeLeft=epsilon;
+        }
         let slopeRight;
-        if (Math.abs(angleRight - Math.PI/2) < epsilon) {
+        if (Math.abs(directionRight%Math.PI/2 - Math.PI/2) < epsilon) {
             slopeRight = Infinity;
-        }else {
-            slopeRight = Math.tan(angleRight);
+        } else {
+            slopeRight = Math.tan(directionRight);
+        }
+        if (slopeRight==0 && directionRight==0) {
+            slopeRight=epsilon;
         }
 
         let interceptLeft;
@@ -41,7 +44,6 @@ export default class Camera {
                 interceptLeft = this.y-slopeLeft*this.x;
             }
         }
-
         let interceptRight;
         if (slopeRight==Infinity) {
             interceptLeft = this.x
