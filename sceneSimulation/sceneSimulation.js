@@ -124,18 +124,9 @@ class Simulate2D {
 let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 40), new Vertex(3, 50, 40)];
 let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
 let camera = new Camera(0, 10, 10, Math.PI*1/4, Math.PI*1/2);
+let camera2 = new Camera(0, 12, 13, Math.PI*1/4+0.1, Math.PI*1/2);
+let cameratest = new Camera(0, 20, 15, Math.PI*1/4+0.5, Math.PI*1/2);
 let simulation = new Simulate2D(vertices, edges, camera);
-
-nextEdgeId = 4;
-
-let view = simulation.predict();
-
-let normedView = []
-view.forEach((element) => {
-    normedView.push([(camera.angle/2+element[0])/camera.angle, element[1]])
-})
-console.log(normedView)
-
 
 let content = "";
 edges.forEach((edge) => {
@@ -150,113 +141,130 @@ edges.forEach((edge) => {
     }
 })
 
+let view = simulation.predict();
 
-let {cameraEquationLeft, cameraEquationRight} = camera.equations();
-let equationTop = new Equation(0, 64);
-let equationBottom = new Equation(0, 0);
-let equationLeft = new Equation(Infinity, 0);
-let equationRight = new Equation(Infinity, 64);
 
-function intersectionWithBound(quadrant, cameraEquation, cameraEquation_equationTop_intersection, cameraEquation_equationBottom_intersection, cameraEquation_equationLeft_intersection, cameraEquation_equationRight_intersection) {
-    const isLeftIntersectionValid = !Number.isNaN(cameraEquation_equationLeft_intersection);
-    const isRightIntersectionValid = !Number.isNaN(cameraEquation_equationRight_intersection);
-    const isTopIntersectionValid = !Number.isNaN(cameraEquation_equationTop_intersection);
-    const isBottomIntersectionValid = !Number.isNaN(cameraEquation_equationBottom_intersection);
+function getCameraView(view, camera) {
+    let normedView = []
+    view.forEach((element) => {
+        normedView.push([(camera.angle/2+element[0])/camera.angle, element[1]])
+    })
+    console.log(normedView)
 
-    let cameraSlope = cameraEquation.m
-    if (cameraSlope === Infinity || cameraSlope === -Infinity) {
-        if (quadrant==1 || quadrant==2) {
-            return cameraEquation_equationTop_intersection; 
+
+    let {cameraEquationLeft, cameraEquationRight} = camera.equations();
+    let equationTop = new Equation(0, 64);
+    let equationBottom = new Equation(0, 0);
+    let equationLeft = new Equation(Infinity, 0);
+    let equationRight = new Equation(Infinity, 64);
+
+    function intersectionWithBound(quadrant, cameraEquation, cameraEquation_equationTop_intersection, cameraEquation_equationBottom_intersection, cameraEquation_equationLeft_intersection, cameraEquation_equationRight_intersection) {
+        const isLeftIntersectionValid = !Number.isNaN(cameraEquation_equationLeft_intersection);
+        const isRightIntersectionValid = !Number.isNaN(cameraEquation_equationRight_intersection);
+        const isTopIntersectionValid = !Number.isNaN(cameraEquation_equationTop_intersection);
+        const isBottomIntersectionValid = !Number.isNaN(cameraEquation_equationBottom_intersection);
+
+        let cameraSlope = cameraEquation.m
+        if (cameraSlope === Infinity || cameraSlope === -Infinity) {
+            if (quadrant==1 || quadrant==2) {
+                return cameraEquation_equationTop_intersection; 
+            }
+            return cameraEquation_equationBottom_intersection;
         }
-        return cameraEquation_equationBottom_intersection;
+
+        if (cameraSlope === 0) {
+            if (quadrant==1) {
+                return cameraEquation_equationRight_intersection;
+            }
+            return cameraEquation_equationLeft_intersection;
+        }
+
+        if (quadrant === 1) {
+            if (isLeftIntersectionValid && isTopIntersectionValid) {
+                return (cameraEquation_equationLeft_intersection.y <= 64) ? cameraEquation_equationLeft_intersection : cameraEquation_equationTop_intersection;
+            }
+        } else if (quadrant === 2) {
+            if (isLeftIntersectionValid && isBottomIntersectionValid) {
+                return (cameraEquation_equationLeft_intersection.y >=0) ? cameraEquation_equationLeft_intersection : cameraEquation_equationBottom_intersection;
+            }
+        } else if (quadrant === 3) {
+            if (isRightIntersectionValid && isBottomIntersectionValid) {
+                return (cameraEquation_equationRight_intersection.y >= 0) ? cameraEquation_equationRight_intersection : cameraEquation_equationBottom_intersection;
+            }
+        } else if (quadrant === 4) {
+            if (isRightIntersectionValid && isTopIntersectionValid) {
+                return (cameraEquation_equationRight_intersection.y <= 64) ? cameraEquation_equationRight_intersection : cameraEquation_equationTop_intersection;
+            }
+        }
+
+        if (Number.isNaN(cameraEquation_equationLeft_intersection) && Number.isNaN(cameraEquation_equationRight_intersection)) {
+            if (cameraEquation.m === Infinity || cameraEquation.m > 0) {
+                return cameraEquation_equationTop_intersection;
+            }
+            return cameraEquation_equationBottom_intersection;
+        }
+
+        if (isBottomIntersectionValid && isTopIntersectionValid) {
+            return (cameraEquation_equationBottom_intersection.y >= 0) ? cameraEquation_equationBottom_intersection : cameraEquation_equationTop_intersection;
+        }
+
+        return null;
     }
 
-    if (cameraSlope === 0) {
-        if (quadrant==1) {
-            return cameraEquation_equationRight_intersection;
+    function getQuadrant(cameraSlope) {
+        let normalizedSlope = cameraSlope % (2 * Math.PI);
+        if (normalizedSlope < 0) {
+            normalizedSlope += 2 * Math.PI;
         }
-        return cameraEquation_equationLeft_intersection;
-    }
 
-    if (quadrant === 1) {
-        if (isLeftIntersectionValid && isTopIntersectionValid) {
-            return (cameraEquation_equationLeft_intersection.y <= 64) ? cameraEquation_equationLeft_intersection : cameraEquation_equationTop_intersection;
-        }
-    } else if (quadrant === 2) {
-        if (isLeftIntersectionValid && isBottomIntersectionValid) {
-            return (cameraEquation_equationLeft_intersection.y >=0) ? cameraEquation_equationLeft_intersection : cameraEquation_equationBottom_intersection;
-        }
-    } else if (quadrant === 3) {
-        if (isRightIntersectionValid && isBottomIntersectionValid) {
-            return (cameraEquation_equationRight_intersection.y >= 0) ? cameraEquation_equationRight_intersection : cameraEquation_equationBottom_intersection;
-        }
-    } else if (quadrant === 4) {
-        if (isRightIntersectionValid && isTopIntersectionValid) {
-            return (cameraEquation_equationRight_intersection.y <= 64) ? cameraEquation_equationRight_intersection : cameraEquation_equationTop_intersection;
+        if (normalizedSlope >= 0 && normalizedSlope < Math.PI / 2) {
+            return 4;
+        } else if (normalizedSlope >= Math.PI / 2 && normalizedSlope < Math.PI) {
+            return 1;
+        } else if (normalizedSlope >= Math.PI && normalizedSlope < 3 * Math.PI / 2) {
+            return 2;
+        } else if (normalizedSlope >= 3 * Math.PI / 2 && normalizedSlope < 2 * Math.PI) {
+            return 3;
+        } else {
+            return 'Undefined';
         }
     }
 
-    if (Number.isNaN(cameraEquation_equationLeft_intersection) && Number.isNaN(cameraEquation_equationRight_intersection)) {
-        if (cameraEquation.m === Infinity || cameraEquation.m > 0) {
-            return cameraEquation_equationTop_intersection;
-        }
-        return cameraEquation_equationBottom_intersection;
-    }
 
-    if (isBottomIntersectionValid && isTopIntersectionValid) {
-        return (cameraEquation_equationBottom_intersection.y >= 0) ? cameraEquation_equationBottom_intersection : cameraEquation_equationTop_intersection;
-    }
+    let cameraAngleLeft = camera.direction+camera.angle/2;
+    let cameraAngleRight = camera.direction-camera.angle/2;
 
-    return null;
+    let cameraEquationLeft_equationTop_intersection = cameraEquationLeft.intersection(equationTop);
+    let cameraEquationLeft_equationBottom_intersection = cameraEquationLeft.intersection(equationBottom);
+    let cameraEquationLeft_equationLeft_intersection = cameraEquationLeft.intersection(equationLeft);
+    let cameraEquationLeft_equationRight_intersection = cameraEquationLeft.intersection(equationRight);
+
+    let intersectionCameraLeft = intersectionWithBound(getQuadrant(cameraAngleLeft), cameraEquationLeft, cameraEquationLeft_equationTop_intersection, cameraEquationLeft_equationBottom_intersection, cameraEquationLeft_equationLeft_intersection, cameraEquationLeft_equationRight_intersection)
+
+
+    let cameraEquationRight_equationTop_intersection = cameraEquationRight.intersection(equationTop);
+    let cameraEquationRight_equationBottom_intersection = cameraEquationRight.intersection(equationBottom);
+    let cameraEquationRight_equationLeft_intersection = cameraEquationRight.intersection(equationLeft);
+    let cameraEquationRight_equationRight_intersection = cameraEquationRight.intersection(equationRight);
+
+    let intersectionCameraRight = intersectionWithBound(getQuadrant(cameraAngleRight), cameraEquationRight, cameraEquationRight_equationTop_intersection, cameraEquationRight_equationBottom_intersection, cameraEquationRight_equationLeft_intersection, cameraEquationRight_equationRight_intersection)
+
+    let cameraContent = `?${camera.x},${camera.y};${intersectionCameraLeft.x},${intersectionCameraLeft.y};255,0,0\n`+`?${camera.x},${camera.y};${intersectionCameraRight.x},${intersectionCameraRight.y};255,0,0`
+    content += cameraContent
+
+    function viewTextFromView(arr) {
+        return "\n#"+arr.map(item => item.join(';')).join('\n#');
+    }
+    let viewText = viewTextFromView(normedView);
+
+    content+=viewText
 }
 
-function getQuadrant(cameraSlope) {
-    let normalizedSlope = cameraSlope % (2 * Math.PI);
-    if (normalizedSlope < 0) {
-        normalizedSlope += 2 * Math.PI;
-    }
-
-    if (normalizedSlope >= 0 && normalizedSlope < Math.PI / 2) {
-        return 4;
-    } else if (normalizedSlope >= Math.PI / 2 && normalizedSlope < Math.PI) {
-        return 1;
-    } else if (normalizedSlope >= Math.PI && normalizedSlope < 3 * Math.PI / 2) {
-        return 2;
-    } else if (normalizedSlope >= 3 * Math.PI / 2 && normalizedSlope < 2 * Math.PI) {
-        return 3;
-    } else {
-        return 'Undefined';
-    }
-}
-
-
-let cameraAngleLeft = camera.direction+camera.angle/2;
-let cameraAngleRight = camera.direction-camera.angle/2;
-
-let cameraEquationLeft_equationTop_intersection = cameraEquationLeft.intersection(equationTop);
-let cameraEquationLeft_equationBottom_intersection = cameraEquationLeft.intersection(equationBottom);
-let cameraEquationLeft_equationLeft_intersection = cameraEquationLeft.intersection(equationLeft);
-let cameraEquationLeft_equationRight_intersection = cameraEquationLeft.intersection(equationRight);
-
-let intersectionCameraLeft = intersectionWithBound(getQuadrant(cameraAngleLeft), cameraEquationLeft, cameraEquationLeft_equationTop_intersection, cameraEquationLeft_equationBottom_intersection, cameraEquationLeft_equationLeft_intersection, cameraEquationLeft_equationRight_intersection)
-
-
-let cameraEquationRight_equationTop_intersection = cameraEquationRight.intersection(equationTop);
-let cameraEquationRight_equationBottom_intersection = cameraEquationRight.intersection(equationBottom);
-let cameraEquationRight_equationLeft_intersection = cameraEquationRight.intersection(equationLeft);
-let cameraEquationRight_equationRight_intersection = cameraEquationRight.intersection(equationRight);
-
-let intersectionCameraRight = intersectionWithBound(getQuadrant(cameraAngleRight), cameraEquationRight, cameraEquationRight_equationTop_intersection, cameraEquationRight_equationBottom_intersection, cameraEquationRight_equationLeft_intersection, cameraEquationRight_equationRight_intersection)
-
-let cameraContent = `${camera.x},${camera.y};${intersectionCameraLeft.x},${intersectionCameraLeft.y};255,0,0\n`+`${camera.x},${camera.y};${intersectionCameraRight.x},${intersectionCameraRight.y};255,0,0`
-content += cameraContent
-
-function viewTextFromView(arr) {
-    return "\n#"+arr.map(item => item.join(';')).join('\n#');
-}
-let viewText = viewTextFromView(normedView);
-
-content+=viewText
+getCameraView(view, camera)
+content+="\n"
+getCameraView(view, camera2)
+content+="\n"
+getCameraView(view, cameratest)
 
 writeFile('scene.txt', content, (err) => {
     if (err) {

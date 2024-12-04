@@ -32,19 +32,37 @@ def draw_scene(file_path):
         line = line.strip()
         if line.startswith('#'):
             # Parse the line for the new y-value and color
-            if (i!=len(lines)-1):
-                xVal, color_value = lines[i+1].split(';')
-                xVal = float(xVal[1:])
+            if (i<len(lines)-1):
+                if (lines[i+1].startswith("#")):
+                    xVal, color_value = lines[i+1].split(';')
+                    xVal = float(xVal[1:])
 
-                r, g, b = map(int, color_value.split(','))
-                t.pencolor(r, g, b)  # Update the current color
+                    r, g, b = map(int, color_value.split(','))
+                    t.pencolor(r, g, b)  # Update the current color
 
-                
-                # Move to the new y-value position
-                t.goto(xVal*bounds*factor, -25)
+                    
+                    # Move to the new y-value position
+                    t.goto(xVal*bounds*factor, -25)
 
             
 
+        elif line.startswith("?"):
+            # Parse the line: x1,y1;x2,y2;r,g,b
+            point1, point2, rgb = line[1:].split(';')
+            x1, y1 = float(point1.split(',')[0]), float(point1.split(',')[1])
+            x2, y2 = float(point2.split(',')[0]), float(point2.split(',')[1])
+            r, g, b = map(int, rgb.split(','))
+
+            # Move the turtle to the starting point without drawing
+            t.penup()
+            t.goto(x1*factor, y1*factor)
+            t.pendown()
+
+            # Set the line color
+            t.pencolor(r, g, b)
+
+            # Draw the line
+            t.goto(x2*factor, y2*factor)
         else:
             # Parse the line: x1,y1;x2,y2;r,g,b
             point1, point2, rgb = line.split(';')
@@ -62,22 +80,25 @@ def draw_scene(file_path):
 
             # Draw the line
             t.goto(x2*factor, y2*factor)
+
         
-        if not lines[i].startswith("#"):
+        if (i<len(lines)-1):
             if lines[i+1].startswith("#"):
                 t.pensize(5)
+
                 xVal, color_value = lines[i+1].split(';')
                 xVal = float(xVal[1:])
                 r, g, b = map(int, color_value.split(','))
 
                 t.penup()
                 t.goto(0, -25)
-                t.pencolor(200,200,200)
+                t.pencolor(r,g,b)
 
                 t.pendown()
                 t.goto(xVal*bounds*factor, -25)
-                t.pencolor(r, g, b)  # Update the current color
+                t.pencolor(200, 200, 200)  # Update the current color
                 t.pendown()
+                t.pensize(1)
     t.pendown()
     t.pencolor(200,200,200)
     t.goto(bounds*factor, -25)
