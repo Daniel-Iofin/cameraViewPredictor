@@ -1,3 +1,9 @@
+let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 40), new Vertex(3, 50, 40)];
+let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
+let camera = new Camera(0, 10, 10, Math.PI*1/4, Math.PI*1/2);
+let camera2 = new Camera(0, 10, 10, Math.PI*1/4+0.1, Math.PI*1/2);
+let cameratest = new Camera(0, 20, 15, Math.PI*1/4+0.5, Math.PI*1/2);
+
 import { writeFile } from 'fs';
 import Vertex from './geometries/vertex.js';
 import Edge from './geometries/edge.js';
@@ -126,12 +132,6 @@ class Simulate2D {
     }
 }
 
-let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 40), new Vertex(3, 50, 40)];
-let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
-let camera = new Camera(0, 10, 10, Math.PI*1/4, Math.PI*1/2);
-let camera2 = new Camera(0, 10, 10, Math.PI*1/4+0.1, Math.PI*1/2);
-let cameratest = new Camera(0, 20, 15, Math.PI*1/4+0.5, Math.PI*1/2);
-
 const content = [];
 const edgeArrays = []
 edges.forEach((edge) => {
@@ -147,10 +147,7 @@ edges.forEach((edge) => {
 })
 content.push(edgeArrays);
 
-function getCameraView(camera) {
-    let simulation = new Simulate2D(vertices, edges, camera);
-    let view = simulation.predict();
-
+function getCameraContent(camera) {
     let {cameraEquationLeft, cameraEquationRight} = camera.equations();
     let equationTop = new Equation(0, 64);
     let equationBottom = new Equation(0, 0);
@@ -229,7 +226,6 @@ function getCameraView(camera) {
         }
     }
 
-
     let cameraAngleLeft = camera.direction+camera.angle/2;
     let cameraAngleRight = camera.direction-camera.angle/2;
 
@@ -240,7 +236,6 @@ function getCameraView(camera) {
 
     let intersectionCameraLeft = intersectionWithBound(getQuadrant(cameraAngleLeft), cameraEquationLeft, cameraEquationLeft_equationTop_intersection, cameraEquationLeft_equationBottom_intersection, cameraEquationLeft_equationLeft_intersection, cameraEquationLeft_equationRight_intersection)
 
-
     let cameraEquationRight_equationTop_intersection = cameraEquationRight.intersection(equationTop);
     let cameraEquationRight_equationBottom_intersection = cameraEquationRight.intersection(equationBottom);
     let cameraEquationRight_equationLeft_intersection = cameraEquationRight.intersection(equationLeft);
@@ -250,36 +245,41 @@ function getCameraView(camera) {
 
     let cameraContent = [[[camera.x, camera.y], [intersectionCameraLeft.x, intersectionCameraLeft.y], '255,0,0'], [[camera.x, camera.y], [intersectionCameraRight.x, intersectionCameraRight.y], '255,0,0']]
     content.push(cameraContent);
+}
 
-    function viewTextFromView(arr) {
-        let result = [];
-        if (arr.length === 0) return "\n";
-        
-        // Add initial white segment if first point isn't at 0
-        if (arr[0][0] > 0) {
-            result.push([0, arr[0][0], '0,0,0']);
-        }
-        
-        // Process segments based on color changes
-        for (let i = 0; i < arr.length - 1; i++) {
-            // If next point has same color, continue looking ahead
-            let endIndex = i + 1;
-            while (endIndex < arr.length - 1 && arr[endIndex][1] === arr[endIndex + 1][1]) {
-                endIndex++;
-            }
-            
-            result.push([arr[i][0], arr[endIndex][0], arr[endIndex][1]]);
-            i = endIndex - 1; // Skip the points we've already processed
-        }
-        
-        // Add final white segment if last point isn't at 1
-        if (arr[arr.length - 1][0] < 1) {
-            result.push([arr[arr.length - 1][0], 1, '0,0,0']);
-        }
-        return result;
+function getViewText(view) {
+    let result = [];
+    if (view.length === 0) return "\n";
+    
+    // Add initial white segment if first point isn't at 0
+    if (view[0][0] > 0) {
+        result.push([0, view[0][0], '0,0,0']);
     }
-    let viewText = viewTextFromView(view);
-    return viewText
+    
+    // Process segments based on color changes
+    for (let i = 0; i < view.length - 1; i++) {
+        // If next point has same color, continue looking ahead
+        let endIndex = i + 1;
+        while (endIndex < view.length - 1 && view[endIndex][1] === view[endIndex + 1][1]) {
+            endIndex++;
+        }
+        
+        result.push([view[i][0], view[endIndex][0], view[endIndex][1]]);
+        i = endIndex - 1; // Skip the points we've already processed
+    }
+    
+    // Add final white segment if last point isn't at 1
+    if (view[view.length - 1][0] < 1) {
+        result.push([view[view.length - 1][0], 1, '0,0,0']);
+    }
+    return result;
+}
+
+function getCameraView(camera) {
+    let simulation = new Simulate2D(vertices, edges, camera);
+    let view = simulation.predict();
+    getCameraContent(camera);
+    return getViewText(view);
 }
 
 let views = [getCameraView(camera), getCameraView(camera2), getCameraView(cameratest)]
