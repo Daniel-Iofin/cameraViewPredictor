@@ -17,8 +17,8 @@ function getVertexAngles(vertices, camera) {
         let deltaX = vertex.x - camera.x;
         let deltaY = vertex.y - camera.y;
 
-        let angleFromHorizontal = Math.atan(deltaX/deltaY);
-        let angleFromCameraCenter = angleFromHorizontal - camera.direction;
+        let angleFromHorizontal = Math.atan(deltaY/deltaX);
+        let angleFromCameraCenter = camera.direction-Math.abs(angleFromHorizontal);
 
         vertex.setCameraAngle(angleFromCameraCenter)
     });
@@ -101,9 +101,14 @@ function getViewEdges(vertices, edges, camera) {
     let colorView = []
     view.forEach((element) => {
         let edgeId = element[1];
-        let adjustedView = element[0]+(camera.direction+camera.angle/2)-Math.PI/2;
+        let adjustedView = (element[0]+camera.angle/2)/camera.angle;
+
+        if (adjustedView<0) {adjustedView=0}
+        if (adjustedView>1) {adjustedView=1}
+
         colorView.push([adjustedView, edges.find(e => e.id === edgeId).color])
     })
+    
     return colorView
 }
 
@@ -124,33 +129,27 @@ class Simulate2D {
 let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 40), new Vertex(3, 50, 40)];
 let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
 let camera = new Camera(0, 10, 10, Math.PI*1/4, Math.PI*1/2);
-let camera2 = new Camera(0, 12, 13, Math.PI*1/4+0.1, Math.PI*1/2);
+let camera2 = new Camera(0, 10, 10, Math.PI*1/4+0.1, Math.PI*1/2);
 let cameratest = new Camera(0, 20, 15, Math.PI*1/4+0.5, Math.PI*1/2);
-let simulation = new Simulate2D(vertices, edges, camera);
 
-let content = "";
+const content = [];
+const edgeArrays = []
 edges.forEach((edge) => {
     try {
-    let x1Vertex = vertices.find(vertex => vertex.id == edge.vertex1Id)
-    let y1Vertex = vertices.find(vertex => vertex.id == edge.vertex1Id);
-    let x2Vertex = vertices.find(vertex => vertex.id == edge.vertex2Id);
-    let y2Vertex = vertices.find(vertex => vertex.id == edge.vertex2Id);
-    let edgeText = `${x1Vertex.x},${y1Vertex.y};${x2Vertex.x},${y2Vertex.y};${edge.color}\n`;
-    content+=edgeText;
+        let x1Vertex = vertices.find(vertex => vertex.id == edge.vertex1Id)
+        let y1Vertex = vertices.find(vertex => vertex.id == edge.vertex1Id);
+        let x2Vertex = vertices.find(vertex => vertex.id == edge.vertex2Id);
+        let y2Vertex = vertices.find(vertex => vertex.id == edge.vertex2Id);
+        let edgeArray = [[x1Vertex.x, y1Vertex.y], [x2Vertex.x, y2Vertex.y], edge.color]
+        edgeArrays.push(edgeArray)
     } catch {
     }
 })
+content.push(edgeArrays);
 
-let view = simulation.predict();
-
-
-function getCameraView(view, camera) {
-    let normedView = []
-    view.forEach((element) => {
-        normedView.push([(camera.angle/2+element[0])/camera.angle, element[1]])
-    })
-    console.log(normedView)
-
+function getCameraView(camera) {
+    let simulation = new Simulate2D(vertices, edges, camera);
+    let view = simulation.predict();
 
     let {cameraEquationLeft, cameraEquationRight} = camera.equations();
     let equationTop = new Equation(0, 64);
@@ -249,29 +248,48 @@ function getCameraView(view, camera) {
 
     let intersectionCameraRight = intersectionWithBound(getQuadrant(cameraAngleRight), cameraEquationRight, cameraEquationRight_equationTop_intersection, cameraEquationRight_equationBottom_intersection, cameraEquationRight_equationLeft_intersection, cameraEquationRight_equationRight_intersection)
 
-    let cameraContent = `?${camera.x},${camera.y};${intersectionCameraLeft.x},${intersectionCameraLeft.y};255,0,0\n`+`?${camera.x},${camera.y};${intersectionCameraRight.x},${intersectionCameraRight.y};255,0,0`
-    content += cameraContent
+    let cameraContent = [[[camera.x, camera.y], [intersectionCameraLeft.x, intersectionCameraLeft.y], '255,0,0'], [[camera.x, camera.y], [intersectionCameraRight.x, intersectionCameraRight.y], '255,0,0']]
+    content.push(cameraContent);
 
     function viewTextFromView(arr) {
-        return "\n#"+arr.map(item => item.join(';')).join('\n#');
+        let result = [];
+        if (arr.length === 0) return "\n";
+        
+        // Add initial white segment if first point isn't at 0
+        if (arr[0][0] > 0) {
+            result.push([0, arr[0][0], '0,0,0']);
+        }
+        
+        // Process segments based on color changes
+        for (let i = 0; i < arr.length - 1; i++) {
+            // If next point has same color, continue looking ahead
+            let endIndex = i + 1;
+            while (endIndex < arr.length - 1 && arr[endIndex][1] === arr[endIndex + 1][1]) {
+                endIndex++;
+            }
+            
+            result.push([arr[i][0], arr[endIndex][0], arr[endIndex][1]]);
+            i = endIndex - 1; // Skip the points we've already processed
+        }
+        
+        // Add final white segment if last point isn't at 1
+        if (arr[arr.length - 1][0] < 1) {
+            result.push([arr[arr.length - 1][0], 1, '0,0,0']);
+        }
+        return result;
     }
-    let viewText = viewTextFromView(normedView);
-
-    content+=viewText
+    let viewText = viewTextFromView(view);
+    return viewText
 }
 
-getCameraView(view, camera)
-content+="\n"
-getCameraView(view, camera2)
-content+="\n"
-getCameraView(view, cameratest)
+let views = [getCameraView(camera), getCameraView(camera2), getCameraView(cameratest)]
+content.push(views)
 
-writeFile('scene.txt', content, (err) => {
+console.log(JSON.stringify(content))
+writeFile('scene.txt', JSON.stringify(content), (err) => {
     if (err) {
         console.error('An error occurred while writing to the file:', err);
     } else {
         console.log('File has been written successfully.');
     }
 });
-
-// TODO: GLOBAL VARIABLE FOR WORLD BOUNDARY

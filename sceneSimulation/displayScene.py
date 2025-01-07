@@ -1,13 +1,14 @@
 import turtle
+import json
 
 def draw_scene(file_path):
-    # Read file
+    # Read file and parse JSON
     with open(file_path, 'r') as file:
-        lines = file.readlines()
+        content = json.loads(file.read())
 
-    # Global variables
-    factor=6
-    bounds=64
+    # Global variables 
+    factor = 6
+    bounds = 64
 
     # Initialize
     screen = turtle.Screen()
@@ -18,6 +19,7 @@ def draw_scene(file_path):
     t.speed(0)
     t.hideturtle()
 
+    # Draw bounding box
     t.goto(0,0)
     t.pendown()
     t.goto(0, factor*bounds)
@@ -25,83 +27,45 @@ def draw_scene(file_path):
     t.goto(factor*bounds, 0)
     t.goto(0,0)
 
+    # Draw scene edges
+    for edge in content[0]:
+        x1, y1 = edge[0]
+        x2, y2 = edge[1]
+        r, g, b = map(int, edge[2].split(','))
 
+        t.penup()
+        t.goto(x1*factor, y1*factor)
+        t.pendown()
+        t.pencolor(r, g, b)
+        t.goto(x2*factor, y2*factor)
 
-    for i in range(len(lines)):
-        line = lines[i]
-        line = line.strip()
-        if line.startswith('#'):
-            # Parse the line for the new y-value and color
-            if (i<len(lines)-1):
-                if (lines[i+1].startswith("#")):
-                    xVal, color_value = lines[i+1].split(';')
-                    xVal = float(xVal[1:])
+    # Draw camera lines
+    for camera_lines in content[1:-1]:
+        for line in camera_lines:
+            x1, y1 = line[0]
+            x2, y2 = line[1]
+            r, g, b = map(int, line[2].split(','))
 
-                    r, g, b = map(int, color_value.split(','))
-                    t.pencolor(r, g, b)  # Update the current color
+            t.penup()
+            t.goto(x1*factor, y1*factor)
+            t.pendown()
+            t.pencolor(r, g, b)
+            t.goto(x2*factor, y2*factor)
 
-                    
-                    # Move to the new y-value position
-                    t.goto(xVal*bounds*factor, -25)
-
+    # Draw horizontal view lines
+    t.pensize(5)
+    y_pos = -25
+    for view in content[-1]:
+        for segment in view:
+            start, end, color = segment
+            r, g, b = map(int, color.split(','))
             
-
-        elif line.startswith("?"):
-            # Parse the line: x1,y1;x2,y2;r,g,b
-            point1, point2, rgb = line[1:].split(';')
-            x1, y1 = float(point1.split(',')[0]), float(point1.split(',')[1])
-            x2, y2 = float(point2.split(',')[0]), float(point2.split(',')[1])
-            r, g, b = map(int, rgb.split(','))
-
-            # Move the turtle to the starting point without drawing
             t.penup()
-            t.goto(x1*factor, y1*factor)
-            t.pendown()
-
-            # Set the line color
+            t.goto(start*bounds*factor, y_pos)
             t.pencolor(r, g, b)
-
-            # Draw the line
-            t.goto(x2*factor, y2*factor)
-        else:
-            # Parse the line: x1,y1;x2,y2;r,g,b
-            point1, point2, rgb = line.split(';')
-            x1, y1 = float(point1.split(',')[0]), float(point1.split(',')[1])
-            x2, y2 = float(point2.split(',')[0]), float(point2.split(',')[1])
-            r, g, b = map(int, rgb.split(','))
-
-            # Move the turtle to the starting point without drawing
-            t.penup()
-            t.goto(x1*factor, y1*factor)
             t.pendown()
-
-            # Set the line color
-            t.pencolor(r, g, b)
-
-            # Draw the line
-            t.goto(x2*factor, y2*factor)
-
-        
-        if (i<len(lines)-1):
-            if lines[i+1].startswith("#"):
-                t.pensize(5)
-
-                xVal, color_value = lines[i+1].split(';')
-                xVal = float(xVal[1:])
-                r, g, b = map(int, color_value.split(','))
-
-                t.penup()
-                t.goto(0, -25)
-                t.pencolor(r,g,b)
-
-                t.pendown()
-                t.goto(xVal*bounds*factor, -25)
-                t.pencolor(200, 200, 200)  # Update the current color
-                t.pendown()
-                t.pensize(1)
-    t.pendown()
-    t.pencolor(200,200,200)
-    t.goto(bounds*factor, -25)
+            t.goto(end*bounds*factor, y_pos)
+        y_pos -= 25
 
     # Keep the window open until clicked
     screen.exitonclick()
