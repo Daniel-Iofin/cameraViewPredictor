@@ -1,7 +1,7 @@
 let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 40), new Vertex(3, 50, 40)];
 let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
 let camera = new Camera(0, 10, 10, Math.PI*1/4, Math.PI*1/2);
-let camera2 = new Camera(0, 10, 10, Math.PI*1/4+0.1, Math.PI*1/2);
+let camera2 = new Camera(0, 5, 5, Math.PI*1/4+0.1, Math.PI*1/2);
 let cameratest = new Camera(0, 20, 15, Math.PI*1/4+0.5, Math.PI*1/2);
 
 import { writeFile } from 'fs';
@@ -9,10 +9,6 @@ import Vertex from './geometries/vertex.js';
 import Edge from './geometries/edge.js';
 import Equation from './geometries/equation.js';
 import Camera from './camera/camera.js';
-import Point from './geometries/point.js'
-import { isArrayBufferView } from 'util/types';
-
-let nextEdgeId=0;
 
 function mod(n, m) {
     return ((n % m) + m) % m;
@@ -291,5 +287,56 @@ writeFile('scene.txt', JSON.stringify(content), (err) => {
         console.error('An error occurred while writing to the file:', err);
     } else {
         console.log('File has been written successfully.');
+    }
+});
+
+// Get camera view and determine viewing lines
+let cameraView = getCameraView(camera);
+let camera2View = getCameraView(camera2);
+
+let viewingLinesCamera = [];
+cameraView.forEach(segment => {
+    if (segment[2]!='0,0,0') {
+        let BaseAngle = camera.direction+camera.angle/2
+        let segmentAngles = [BaseAngle-segment[0]*camera.angle, BaseAngle-segment[1]*camera.angle]
+        let segmentSlopes = segmentAngles.map(angle => Math.tan(angle))
+        let boundaries = segmentSlopes.map(slope => {
+            return new Equation(slope, camera.y-slope*camera.x);
+        });
+        viewingLinesCamera.push(new Map([[segment[2], boundaries]]));
+    }
+});
+
+let viewingLinesCamera2 = [];
+camera2View.forEach(segment => {
+    if (segment[2]!='0,0,0') {
+        let BaseAngle = camera2.direction+camera2.angle/2
+        let segmentAngles = [BaseAngle-segment[0]*camera2.angle, BaseAngle-segment[1]*camera2.angle]
+        let segmentSlopes = segmentAngles.map(angle => Math.tan(angle))
+        let boundaries = segmentSlopes.map(slope => {
+            return new Equation(slope, camera2.y-slope*camera2.x);
+        });
+        viewingLinesCamera2.push(new Map([[segment[2], boundaries]]));
+    }
+});
+
+// Find intersections between corresponding viewing lines
+viewingLinesCamera.forEach((cameraSegment) => {
+    for (let [color, cameraEquations] of cameraSegment) {
+        // Find matching segment in camera2 view
+        let camera2Segment = viewingLinesCamera2.find(segment => segment.has(color));
+        if (camera2Segment) {
+            let camera2Equations = camera2Segment.get(color);
+            
+            // Get intersections between corresponding equations
+            let intersections = [
+                cameraEquations[0].intersection(camera2Equations[0]),
+                cameraEquations[1].intersection(camera2Equations[0]),
+                cameraEquations[0].intersection(camera2Equations[1]),
+                cameraEquations[1].intersection(camera2Equations[1])
+            ];
+            
+            console.log(`Intersections for color ${color}:`, intersections);
+        }
     }
 });
