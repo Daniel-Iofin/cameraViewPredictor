@@ -1,7 +1,7 @@
 let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 40), new Vertex(3, 50, 40)];
 let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
-let camera = new Camera(0, 10, 10, Math.PI*1/4, Math.PI*1/2);
-let camera2 = new Camera(0, 5, 5, Math.PI*1/4+0.1, Math.PI*1/2);
+let camera = new Camera(0, 9, 10, Math.PI*1/4, Math.PI*1/2);
+let camera2 = new Camera(0, 4, 5, Math.PI*1/4+0.1, Math.PI*1/2);
 let cameratest = new Camera(0, 20, 15, Math.PI*1/4+0.5, Math.PI*1/2);
 
 import { writeFile } from 'fs';
@@ -9,6 +9,9 @@ import Vertex from './geometries/vertex.js';
 import Edge from './geometries/edge.js';
 import Equation from './geometries/equation.js';
 import Camera from './camera/camera.js';
+
+let nextVertexId = 4;
+let nextEdgeId = 2;
 
 function mod(n, m) {
     return ((n % m) + m) % m;
@@ -294,7 +297,7 @@ writeFile('scene.txt', JSON.stringify(content), (err) => {
 let cameraView = getCameraView(camera);
 let camera2View = getCameraView(camera2);
 
-let viewingLinesCamera = [];
+let viewingLinesCamera = new Map();
 cameraView.forEach(segment => {
     if (segment[2]!='0,0,0') {
         let BaseAngle = camera.direction+camera.angle/2
@@ -303,11 +306,11 @@ cameraView.forEach(segment => {
         let boundaries = segmentSlopes.map(slope => {
             return new Equation(slope, camera.y-slope*camera.x);
         });
-        viewingLinesCamera.push(new Map([[segment[2], boundaries]]));
+        viewingLinesCamera.set(segment[2], boundaries);
     }
 });
 
-let viewingLinesCamera2 = [];
+let viewingLinesCamera2 = new Map();
 camera2View.forEach(segment => {
     if (segment[2]!='0,0,0') {
         let BaseAngle = camera2.direction+camera2.angle/2
@@ -316,27 +319,26 @@ camera2View.forEach(segment => {
         let boundaries = segmentSlopes.map(slope => {
             return new Equation(slope, camera2.y-slope*camera2.x);
         });
-        viewingLinesCamera2.push(new Map([[segment[2], boundaries]]));
+        viewingLinesCamera2.set(segment[2], boundaries);
     }
 });
 
-// Find intersections between corresponding viewing lines
-viewingLinesCamera.forEach((cameraSegment) => {
-    for (let [color, cameraEquations] of cameraSegment) {
-        // Find matching segment in camera2 view
-        let camera2Segment = viewingLinesCamera2.find(segment => segment.has(color));
-        if (camera2Segment) {
-            let camera2Equations = camera2Segment.get(color);
-            
-            // Get intersections between corresponding equations
-            let intersections = [
-                cameraEquations[0].intersection(camera2Equations[0]),
-                cameraEquations[1].intersection(camera2Equations[0]),
-                cameraEquations[0].intersection(camera2Equations[1]),
-                cameraEquations[1].intersection(camera2Equations[1])
-            ];
-            
-            console.log(`Intersections for color ${color}:`, intersections);
-        }
+let predictedVertices = [];
+let predictedEdges = [];
+
+for (let [key, value] of viewingLinesCamera) {
+    if (viewingLinesCamera2.has(key)) {
+        let camera1Boundaries = value;
+        let camera2Boundaries = viewingLinesCamera2.get(key);
+
+        let leftIntersect = camera1Boundaries[0].intersection(camera2Boundaries[0]);
+        let rightIntersect = camera1Boundaries[1].intersection(camera2Boundaries[1]);
+        console.log(key, leftIntersect, rightIntersect)
+        predictedVertices.push(new Vertex(nextVertexId, leftIntersect.x, leftIntersect.y));
+        predictedVertices.push(new Vertex(nextVertexId+1, rightIntersect.x, rightIntersect.y));
+        predictedEdges.push(new Edge(nextEdgeId, nextVertexId, nextVertexId+1, key));
+        nextVertexId+=2;
     }
-});
+}
+
+console.log(predictedVertices, predictedEdges)
