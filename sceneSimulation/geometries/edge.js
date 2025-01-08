@@ -1,5 +1,5 @@
 export default class Edge {
-    constructor(id, vertex1Id, vertex2Id) {
+    constructor(id, vertex1Id, vertex2Id, color=NaN) {
         this.id = id;
         this.vertex1Id = vertex1Id;
         this.vertex2Id = vertex2Id;
@@ -8,7 +8,9 @@ export default class Edge {
         const g = Math.floor(Math.random() * 255);
         const b = Math.floor(Math.random() * 255);
 
-        this.color = `${r},${g},${b}`;
+        if (isNaN(color)) {
+            this.color = `${r},${g},${b}`;
+        }
     }
 
     getLeftVertexAngle(vertices) {

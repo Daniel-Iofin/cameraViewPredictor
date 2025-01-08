@@ -8,7 +8,7 @@ let vertices = [new Vertex(0, 10, 40), new Vertex(1, 20, 50), new Vertex(2, 40, 
 let edges = [new Edge(0, 0, 2), new Edge(1, 1, 3)];
 let camera = new Camera(0, 9, 10, Math.PI*1/4, Math.PI*1/2);
 let camera2 = new Camera(0, 4, 5, Math.PI*1/4+0.1, Math.PI*1/2);
-let cameratest = new Camera(0, 20, 15, Math.PI*1/4+0.5, Math.PI*1/2);
+let cameratest = new Camera(0, 10, 3, Math.PI*1/4+0.1, Math.PI*1/2);
 
 let nextVertexId = 4;
 let nextEdgeId = 2;
@@ -144,6 +144,7 @@ class Simulate2D {
         if (view[view.length - 1][0] < 1) {
             result.push([view[view.length - 1][0], 1, '0,0,0']);
         }
+        console.log
         return result;
     }
 
@@ -328,6 +329,15 @@ const simulation = new Simulate2D(vertices, edges, [camera, camera2, cameratest]
 const content = simulation.predict();
 console.log(JSON.stringify(content));
 
+// Get predicted geometry
+const {predictedVertices, predictedEdges} = simulation.getPredictedGeometry();
+console.log(predictedVertices, predictedEdges);
+
+const predictedSimulation = new Simulate2D(predictedVertices, predictedEdges, [cameratest]);
+const predictedContent = predictedSimulation.predict();
+console.log("")
+console.log(JSON.stringify(predictedContent));
+
 // Write results to file
 writeFile('scene.txt', JSON.stringify(content), (err) => {
     if (err) {
@@ -337,6 +347,10 @@ writeFile('scene.txt', JSON.stringify(content), (err) => {
     }
 });
 
-// Get predicted geometry
-const {predictedVertices, predictedEdges} = simulation.getPredictedGeometry();
-console.log(predictedVertices, predictedEdges);
+writeFile('prediction.txt', JSON.stringify(predictedContent), (err) => {
+    if (err) {
+        console.error('An error occurred while writing to the file:', err);
+    } else {
+        console.log('File has been written successfully.');
+    }
+});
